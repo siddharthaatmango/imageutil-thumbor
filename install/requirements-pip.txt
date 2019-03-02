@@ -1,0 +1,6 @@
+pycurl
+python-magic
+remotecv
+boto3
+thumbor
+thumbor_spaces
