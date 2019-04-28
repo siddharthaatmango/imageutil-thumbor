@@ -29,40 +29,26 @@ func generateProxy(conf model.Config) http.Handler {
 
 		// to be fetched from db
 		projectID := vars["project_id"]
+
+		// models
 		var project model.Project
 		var image model.Image
 		var analytic model.Analytic
-		// Execute the query
-		sqlStm := fmt.Sprintf("SELECT id, user_id, uuid, fqdn, protocol, base_path FROM projects where uuid = '%s' and is_active=1", projectID)
-		err := conf.MysqlServerConn.QueryRow(sqlStm).Scan(&project.ID, &project.UserID, &project.Uuid, &project.Fqdn, &project.Protocol, &project.BasePath)
+
+		// get projects
+		projectImageOrigin, err := action.GetProject(conf.MysqlServerConn, projectID, &project)
 		if err != nil {
-			util.LogError("generateProxy : SELECT", err.Error())
+			util.LogError("generateProxy : GetProject : SELECT", err.Error())
 			return
 		}
-		projectImageOrigin := fmt.Sprintf("%s://%s", project.Protocol, project.Fqdn)
-		if project.BasePath != "" {
-			projectImageOrigin = fmt.Sprintf("%s://%s/%s", project.Protocol, project.Fqdn, project.BasePath)
-		}
 
-		image.UserID = project.UserID
-		image.ProjectID = project.ID
-		image.Origin = projectImageOrigin
-		image.OriginPath = vars["image"]
-		image.Transformation = vars["transformation"]
-		image.IsSmart = "0"
-		if conf.IsSmart {
-			image.IsSmart = "1"
-		}
-
-		analytic.UserID = project.UserID
-		analytic.ProjectID = project.ID
-
-		sqlStm = fmt.Sprintf("SELECT id, cdn_path, file_size FROM images where project_id = %s and origin_path = '%s' and transformation = '%s' and is_smart = %s", image.ProjectID, image.OriginPath, image.Transformation, image.IsSmart)
-		err = conf.MysqlServerConn.QueryRow(sqlStm).Scan(&image.ID, &image.CdnPath, &image.FileSize)
+		// get image
+		err = action.GetImage(conf.MysqlServerConn, conf.IsSmart, projectImageOrigin, vars["image"], vars["transformation"], &project, &image, &analytic)
 		if err != nil {
-			util.LogWarning("generateProxy : SELECT", err.Error())
+			util.LogWarning("generateProxy : GetImage : SELECT", err.Error())
 		}
 
+		// get or generate thumbor
 		finalScheme := project.Protocol
 		finalHost := conf.CdnOrigin
 		finalPath := strings.Replace(image.CdnPath, fmt.Sprintf("%s/", conf.ResultStorage), "", 1)
@@ -76,6 +62,7 @@ func generateProxy(conf model.Config) http.Handler {
 			analytic.ImageID = image.ID
 			go action.SaveAnalytic(conf.MysqlServerConn, image, analytic, 0, 1, 0)
 		}
+
 		//rewrite url
 		req.URL = &url.URL{
 			Scheme:  finalScheme,
