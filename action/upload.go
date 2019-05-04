@@ -17,7 +17,7 @@ import (
 func UploadHandler(res http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 
-	util.LogInfo("UploadHandler", vars["token"])
+	util.LogInfo("UploadHandler", vars["uploadToken"])
 
 	req.ParseMultipartForm(32 << 20)
 	file, handler, err := req.FormFile("file")

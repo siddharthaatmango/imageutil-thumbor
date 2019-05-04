@@ -20,6 +20,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"github.com/rs/cors"
 	"github.com/siddhartham/imageutil-thumbor/action"
 	"github.com/siddhartham/imageutil-thumbor/model"
 	"github.com/siddhartham/imageutil-thumbor/thumbor"
@@ -139,7 +140,7 @@ func main() {
 
 	//fixed routes
 	r.HandleFunc("/health", action.HealthCheckHandler)
-	r.HandleFunc("/upload/{token}", action.UploadHandler)
+	r.HandleFunc("/upload/{uploadToken}", action.UploadHandler)
 
 	//reverse proxy routes
 	configuration := []model.Config{
@@ -179,13 +180,19 @@ func main() {
 	flag.DurationVar(&wait, "graceful-timeout", time.Second*15, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
 	flag.Parse()
 
+	corsObj := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+	})
+
+	handler := corsObj.Handler(r)
+
 	srv := &http.Server{
 		Addr: fmt.Sprintf("0.0.0.0%s", sc.Port),
 		// Good practice to set timeouts to avoid Slowloris attacks.
 		WriteTimeout: time.Second * 15, //upload
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
-		Handler:      r, // Pass our instance of gorilla/mux in.
+		Handler:      handler, // Pass our instance of gorilla/mux in.
 	}
 
 	// Run our server in a goroutine so that it doesn't block.
