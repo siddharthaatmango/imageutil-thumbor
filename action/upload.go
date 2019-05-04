@@ -18,21 +18,38 @@ func UploadHandler(res http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 
 	util.LogInfo("UploadHandler", vars["uploadToken"])
+	err := checkToken(vars["uploadToken"])
+	if err != nil {
+		util.LogError("UploadHandler : check token", err.Error())
+		res.WriteHeader(http.StatusUnauthorized)
+		res.Write([]byte(err.Error()))
+		return
+	}
 
 	req.ParseMultipartForm(32 << 20)
 	file, handler, err := req.FormFile("file")
 	if err != nil {
 		util.LogError("UploadHandler : get file", err.Error())
+		res.WriteHeader(http.StatusBadRequest)
+		res.Write([]byte(err.Error()))
+		return
 	}
 	defer file.Close()
 
 	err = uploadFile(handler.Filename, file)
 	if err != nil {
 		util.LogError("UploadHandler : uploadFile", err.Error())
+		res.WriteHeader(http.StatusInternalServerError)
+		res.Write([]byte(err.Error()))
+		return
 	}
 
 	res.WriteHeader(http.StatusOK)
-	fmt.Fprintf(res, "UploadHandler : %v\n", handler.Filename)
+	res.Write([]byte("Uploaded!"))
+}
+
+func checkToken(token string) error {
+	return nil
 }
 
 func uploadFile(fileName string, f multipart.File) error {
