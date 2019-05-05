@@ -32,3 +32,14 @@ type Image struct {
 	FileSize       int64
 	ImgURL         string
 }
+
+type Folder struct {
+	ID          string
+	UserID      string
+	ProjectID   string
+	FolderID    string
+	IsFile      string
+	Name        string
+	Path        string
+	UploadToken string
+}

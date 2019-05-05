@@ -140,7 +140,9 @@ func main() {
 
 	//fixed routes
 	r.HandleFunc("/health", action.HealthCheckHandler)
-	r.HandleFunc("/upload/{uploadToken}", action.UploadHandler)
+	r.HandleFunc("/upload/{uploadToken}/{fileName}", func(w http.ResponseWriter, r *http.Request) {
+		action.UploadHandler(db, w, r)
+	})
 
 	//reverse proxy routes
 	configuration := []model.Config{

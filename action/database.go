@@ -43,7 +43,7 @@ func GetImage(db *sql.DB, isSmart bool, projectImageOrigin string, originPath st
 }
 
 func SaveImageUrl(db *sql.DB, image model.Image, analytic model.Analytic) {
-	sqlStm := fmt.Sprintf("INSERT INTO images VALUES ( NULL, %s, %s, '%s', '%s', '%s', '%s', '%s', '%s', 0, NOW(), NOW(), 'imagetransform.io')", image.UserID, image.ProjectID, image.Key, image.Origin, image.OriginPath, image.Transformation, image.IsSmart, image.CdnPath)
+	sqlStm := fmt.Sprintf("INSERT INTO images (id, user_id, project_id, key, origin, origin_path, transformation, is_smart, cdn_path, file_size, created_at, updated_at, host_domain ) VALUES ( NULL, %s, %s, '%s', '%s', '%s', '%s', '%s', '%s', 0, NOW(), NOW(), 'imagetransform.io')", image.UserID, image.ProjectID, image.Key, image.Origin, image.OriginPath, image.Transformation, image.IsSmart, image.CdnPath)
 	insert, err := db.Exec(sqlStm)
 	if err != nil {
 		util.LogError("saveImageUrl : INSERT", err.Error())
@@ -73,7 +73,7 @@ func SaveAnalytic(db *sql.DB, image model.Image, analytic model.Analytic, incrUn
 		analytic.UniqRequest = 1
 		analytic.TotalRequest = 1
 		analytic.TotalBytes = incrBytes
-		sqlStm = fmt.Sprintf("INSERT INTO analytics VALUES ( NULL, %s, %s, '%d', '%d', '%d', '%s', NOW(), NOW() )", analytic.UserID, analytic.ProjectID, analytic.UniqRequest, analytic.TotalRequest, analytic.TotalBytes, analytic.ImageID)
+		sqlStm = fmt.Sprintf("INSERT INTO analytics (id, user_id, project_id, uniq_request, total_request, total_bytes, last_image_id, created_at, updated_at) VALUES ( NULL, %s, %s, '%d', '%d', '%d', '%s', NOW(), NOW() )", analytic.UserID, analytic.ProjectID, analytic.UniqRequest, analytic.TotalRequest, analytic.TotalBytes, analytic.ImageID)
 		_, err := db.Exec(sqlStm)
 		if err != nil {
 			util.LogError("saveAnalytic : INSERT", err.Error())
