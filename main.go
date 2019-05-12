@@ -134,7 +134,7 @@ func main() {
 		BucketName:          os.Getenv("BUCKETNAME"),
 		ResultStorage:       os.Getenv("RESULTSTORAGE"),
 		MediaStorage:        os.Getenv("MEDIASTORAGE"),
-		MediaEndpoint:       os.Getenv("ENDPOINT"),
+		MediaEndpoint:       os.Getenv("MEDIAENDPOINT"),
 	}
 	//Mysql connection
 	mysqlConnStr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", sc.MysqlServerUsername, sc.MysqlServerPassword, sc.MysqlServerHost, sc.MysqlServerPort, sc.MysqlServerDatabase)

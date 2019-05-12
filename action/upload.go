@@ -119,12 +119,12 @@ func checkTokenAndGetFolder(db *sql.DB, uploadToken string, fileName string) (mo
 }
 
 func uploadFile(fileName string, f multipart.File, folder model.Folder) (string, error) {
-	endpoint := os.Getenv("ENDPOINT")
-	region := os.Getenv("REGION")
+	endpoint := os.Getenv("MEDIAENDPOINT")
+	region := os.Getenv("MEDIAREGION")
 	spaceKey := os.Getenv("SPACEKEY")
 	spaceSecret := os.Getenv("SPACESECRET")
 	doBucket := os.Getenv("BUCKETNAME")
-	storageFolder := os.Getenv("STORAGE_FOLDER")
+	storageFolder := os.Getenv("MEDIASTORAGE")
 
 	destPath := fmt.Sprintf("%s/%s/%s", storageFolder, folder.Path, fileName)
 
