@@ -46,8 +46,15 @@ func generateProxy(conf model.Config) http.Handler {
 			return
 		}
 
+		imgPath := vars["image"]
+		//is media storage
+		if conf.IsMedia {
+			imgPath = fmt.Sprintf("https://%s.%s/%s/%s", conf.BucketName, conf.MediaEndpoint, conf.MediaStorage, imgPath)
+		}
+		util.LogInfo("generateProxy : GetImage : Image Path", imgPath)
+
 		// get image
-		err = action.GetImage(conf.MysqlServerConn, conf.IsSmart, projectImageOrigin, vars["image"], vars["transformation"], &project, &image, &analytic)
+		err = action.GetImage(conf.MysqlServerConn, conf.IsSmart, projectImageOrigin, imgPath, vars["transformation"], &project, &image, &analytic)
 		if err != nil {
 			util.LogWarning("generateProxy : GetImage : SELECT", err.Error())
 		}
@@ -126,6 +133,8 @@ func main() {
 		CdnOrigin:           os.Getenv("CDNORIGIN"), //"cdn.imageutil.io",
 		BucketName:          os.Getenv("BUCKETNAME"),
 		ResultStorage:       os.Getenv("RESULTSTORAGE"),
+		MediaStorage:        os.Getenv("MEDIASTORAGE"),
+		MediaEndpoint:       os.Getenv("ENDPOINT"),
 	}
 	//Mysql connection
 	mysqlConnStr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", sc.MysqlServerUsername, sc.MysqlServerPassword, sc.MysqlServerHost, sc.MysqlServerPort, sc.MysqlServerDatabase)
@@ -147,24 +156,56 @@ func main() {
 	//reverse proxy routes
 	configuration := []model.Config{
 		model.Config{
-			Path:            "/{project_id}/{transformation}/smart/{image:.*}",
+			Path:            "/{project_id}/media/{transformation}/smart/{image:.*}",
 			Host:            sc.ThumborHost,
 			IsSmart:         true,
+			IsMedia:         true,
 			Secret:          sc.ThumborSecret,
 			MysqlServerConn: db,
 			CdnOrigin:       sc.CdnOrigin,
 			BucketName:      sc.BucketName,
 			ResultStorage:   sc.ResultStorage,
+			MediaStorage:    sc.MediaStorage,
+			MediaEndpoint:   sc.MediaEndpoint,
+		},
+		model.Config{
+			Path:            "/{project_id}/media/{transformation}/{image:.*}",
+			Host:            sc.ThumborHost,
+			IsSmart:         false,
+			IsMedia:         true,
+			Secret:          sc.ThumborSecret,
+			MysqlServerConn: db,
+			CdnOrigin:       sc.CdnOrigin,
+			BucketName:      sc.BucketName,
+			ResultStorage:   sc.ResultStorage,
+			MediaStorage:    sc.MediaStorage,
+			MediaEndpoint:   sc.MediaEndpoint,
+		},
+		model.Config{
+			Path:            "/{project_id}/{transformation}/smart/{image:.*}",
+			Host:            sc.ThumborHost,
+			IsSmart:         true,
+			IsMedia:         false,
+			Secret:          sc.ThumborSecret,
+			MysqlServerConn: db,
+			CdnOrigin:       sc.CdnOrigin,
+			BucketName:      sc.BucketName,
+			ResultStorage:   sc.ResultStorage,
+			MediaStorage:    sc.MediaStorage,
+			MediaEndpoint:   sc.MediaEndpoint,
 		},
 		model.Config{
 			Path:            "/{project_id}/{transformation}/{image:.*}",
 			Host:            sc.ThumborHost,
 			IsSmart:         false,
+			IsMedia:         false,
 			Secret:          sc.ThumborSecret,
 			MysqlServerConn: db,
 			CdnOrigin:       sc.CdnOrigin,
 			BucketName:      sc.BucketName,
 			ResultStorage:   sc.ResultStorage,
+			MediaStorage:    sc.MediaStorage,
+			MediaEndpoint:   sc.MediaEndpoint,
 		},
 	}
 	for _, conf := range configuration {

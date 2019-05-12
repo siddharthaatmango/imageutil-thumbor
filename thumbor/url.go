@@ -14,7 +14,10 @@ import (
 
 func GetThumborUrl(conf model.Config, projectImageOrigin string, image model.Image, analytic model.Analytic) string {
 	//attach origin of image
-	imageURL := fmt.Sprintf("%s/%s", projectImageOrigin, image.OriginPath)
+	imageURL := image.OriginPath
+	if conf.IsMedia == false {
+		imageURL = fmt.Sprintf("%s/%s", projectImageOrigin, image.OriginPath)
+	}
 
 	//set the size
 	se := regexp.MustCompile(`s:(\d*)x(\d*)`)

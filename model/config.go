@@ -11,11 +11,14 @@ type Config struct {
 	Path            string
 	Host            string
 	IsSmart         bool
+	IsMedia         bool
 	Secret          string
 	MysqlServerConn *sql.DB
 	CdnOrigin       string
 	BucketName      string
 	ResultStorage   string
+	MediaStorage    string
+	MediaEndpoint   string
 }
 
 type ServerConf struct {
@@ -31,4 +34,6 @@ type ServerConf struct {
 	CdnOrigin           string
 	BucketName          string
 	ResultStorage       string
+	MediaStorage        string
+	MediaEndpoint       string
 }

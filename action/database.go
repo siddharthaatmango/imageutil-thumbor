@@ -43,9 +43,10 @@ func GetImage(db *sql.DB, isSmart bool, projectImageOrigin string, originPath st
 }
 
 func SaveImageUrl(db *sql.DB, image model.Image, analytic model.Analytic) {
-	sqlStm := fmt.Sprintf("INSERT INTO images (id, user_id, project_id, key, origin, origin_path, transformation, is_smart, cdn_path, file_size, created_at, updated_at, host_domain ) VALUES ( NULL, %s, %s, '%s', '%s', '%s', '%s', '%s', '%s', 0, NOW(), NOW(), 'imagetransform.io')", image.UserID, image.ProjectID, image.Key, image.Origin, image.OriginPath, image.Transformation, image.IsSmart, image.CdnPath)
+	sqlStm := fmt.Sprintf("INSERT INTO images (id, user_id, project_id, store_key, origin, origin_path, transformation, is_smart, cdn_path, file_size, created_at, updated_at, host_domain ) VALUES ( NULL, %s, %s, '%s', '%s', '%s', '%s', '%s', '%s', 0, NOW(), NOW(), 'imagetransform.io')", image.UserID, image.ProjectID, image.Key, image.Origin, image.OriginPath, image.Transformation, image.IsSmart, image.CdnPath)
 	insert, err := db.Exec(sqlStm)
 	if err != nil {
+		util.LogWarning("saveImageUrl : INSERT", sqlStm)
 		util.LogError("saveImageUrl : INSERT", err.Error())
 	} else {
 		id, _ := insert.LastInsertId()
