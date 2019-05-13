@@ -34,12 +34,15 @@ type Image struct {
 }
 
 type Folder struct {
-	ID          string
-	UserID      string
-	ProjectID   string
-	FolderID    string
-	IsFile      string
-	Name        string
-	Path        string
-	UploadToken string
+	ID           string
+	UserID       string
+	ProjectID    string
+	FolderID     string
+	IsFile       string
+	Name         string
+	Path         string
+	UploadToken  string
+	OriginalName string
+	MimeType     string
+	FileSize     int64
 }

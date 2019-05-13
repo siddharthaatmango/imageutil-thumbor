@@ -20,6 +20,14 @@ import (
 	"github.com/siddhartham/imageutil-thumbor/util"
 )
 
+const (
+	MB = 1 << 20
+)
+
+type Sizer interface {
+	Size() int64
+}
+
 func UploadHandler(db *sql.DB, res http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 
@@ -32,8 +40,20 @@ func UploadHandler(db *sql.DB, res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	req.ParseMultipartForm(32 << 20)
-	file, _, err := req.FormFile("file")
+	if err := req.ParseMultipartForm(5 * MB); err != nil {
+		util.LogError("UploadHandler : ParseMultipartForm", err.Error())
+		res.WriteHeader(http.StatusBadRequest)
+		res.Write([]byte(err.Error()))
+		return
+	}
+
+	// Limit upload size
+	req.Body = http.MaxBytesReader(res, req.Body, 10*MB) // 10 Mb
+
+	// Create a buffer to store the header of the file in
+	fileHeader := make([]byte, 512)
+
+	file, multipartFileHeader, err := req.FormFile("file")
 	if err != nil {
 		util.LogError("UploadHandler : get file", err.Error())
 		res.WriteHeader(http.StatusBadRequest)
@@ -41,6 +61,14 @@ func UploadHandler(db *sql.DB, res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer file.Close()
+
+	// Copy the headers into the FileHeader buffer
+	if _, err := file.Read(fileHeader); err != nil {
+		util.LogError("UploadHandler : get file header", err.Error())
+		res.WriteHeader(http.StatusBadRequest)
+		res.Write([]byte(err.Error()))
+		return
+	}
 
 	path, err := uploadFile(vars["fileName"], file, folder)
 	if err != nil {
@@ -50,7 +78,7 @@ func UploadHandler(db *sql.DB, res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	_, err = saveFileToDb(db, &folder, vars["fileName"], path)
+	_, err = saveFileToDb(db, &folder, vars["fileName"], path, file.(Sizer).Size(), http.DetectContentType(fileHeader), multipartFileHeader.Filename)
 	if err != nil {
 		util.LogError("UploadHandler : saveFileToDb", err.Error())
 		res.WriteHeader(http.StatusInternalServerError)
@@ -62,17 +90,20 @@ func UploadHandler(db *sql.DB, res http.ResponseWriter, req *http.Request) {
 	res.Write([]byte("Uploaded!"))
 }
 
-func saveFileToDb(db *sql.DB, folder *model.Folder, name string, path string) (model.Folder, error) {
+func saveFileToDb(db *sql.DB, folder *model.Folder, name string, path string, fileSize int64, mimeType string, originalName string) (model.Folder, error) {
 	file := model.Folder{
-		UserID:    folder.UserID,
-		ProjectID: folder.ProjectID,
-		FolderID:  folder.ID,
-		IsFile:    "1",
-		Name:      name,
-		Path:      path,
+		UserID:       folder.UserID,
+		ProjectID:    folder.ProjectID,
+		FolderID:     folder.ID,
+		IsFile:       "1",
+		Name:         name,
+		Path:         path,
+		OriginalName: originalName,
+		MimeType:     mimeType,
+		FileSize:     fileSize,
 	}
 
-	sqlStm := fmt.Sprintf("INSERT INTO folders (id, user_id, project_id, folder_id, is_file, name, path, created_at, updated_at) VALUES ( NULL, %s, %s, %s, %s, '%s', '%s', NOW(), NOW() )", file.UserID, file.ProjectID, file.FolderID, file.IsFile, file.Name, file.Path)
+	sqlStm := fmt.Sprintf("INSERT INTO folders (id, user_id, project_id, folder_id, is_file, name, path, created_at, updated_at, original_name, mime_type, file_size) VALUES ( NULL, %s, %s, %s, %s, '%s', '%s', NOW(), NOW(), '%s', '%s', %d)", file.UserID, file.ProjectID, file.FolderID, file.IsFile, file.Name, file.Path, file.OriginalName, file.MimeType, file.FileSize)
 	_, err := db.Exec(sqlStm)
 	if err != nil {
 		return file, err
